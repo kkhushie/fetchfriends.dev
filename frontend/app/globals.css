@@ -1,0 +1,67 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --vscode-background: #1e1e1e;
+  --vscode-sidebar: #252526;
+  --vscode-editor: #1e1e1e;
+  --vscode-accent: #007acc;
+  --vscode-teal: #4ECDC4;
+  --vscode-text: #cccccc;
+  --vscode-text-secondary: #858585;
+  --vscode-green: #4EC1A0;
+  --vscode-yellow: #dcdcaa;
+  --vscode-red: #f44747;
+  --vscode-purple: #c586c0;
+  --vscode-orange: #ce9178;
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  width: 100%;
+  overflow: hidden;
+  background-color: var(--vscode-background);
+  color: var(--vscode-text);
+  font-family: var(--font-ui, "Segoe UI", -apple-system, system-ui, sans-serif);
+  font-size: 13px;
+}
+
+/* VS Code scrollbar styling */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--vscode-background);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #424242;
+  border-radius: 5px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #4e4e4e;
+}
+
+/* Firefox scrollbar */
+* {
+  scrollbar-color: #424242 var(--vscode-background);
+  scrollbar-width: thin;
+}
+
+@layer utilities {
+  .text-balance {
+    text-wrap: balance;
+  }
+}
+
