@@ -8,7 +8,7 @@ import compression from 'compression';
 import { createServer } from 'http';
 import { Server } from 'socket.io';
 import { connectDB } from './config/database';
-import { connectRedis } from './config/redis';
+import { connectRedis, isRedisConnected, testRedisConnection } from './config/redis';
 import { errorHandler } from './middleware/errorHandler';
 import { rateLimiter } from './middleware/rateLimiter';
 import authRoutes from './routes/auth';
@@ -59,6 +59,27 @@ app.use('/api/', rateLimiter);
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// Redis health check
+app.get('/health/redis', async (req, res) => {
+  try {
+    const isConnected = isRedisConnected();
+    const pingTest = await testRedisConnection();
+    
+    res.json({
+      status: isConnected && pingTest ? 'connected' : 'disconnected',
+      isConnected,
+      pingTest,
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error: any) {
+    res.status(500).json({
+      status: 'error',
+      error: error.message,
+      timestamp: new Date().toISOString(),
+    });
+  }
 });
 
 // API Routes
@@ -127,6 +148,8 @@ app.use(errorHandler);
 async function startServer() {
   try {
     await connectDB();
+    
+    // Try to connect Redis, but don't fail if it's not available
     await connectRedis();
     
     httpServer.listen(PORT, () => {

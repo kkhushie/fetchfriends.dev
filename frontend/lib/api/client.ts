@@ -30,13 +30,19 @@ class ApiClient {
     options: RequestInit = {}
   ): Promise<T> {
     const url = `${this.baseUrl}${endpoint}`;
-    const headers: HeadersInit = {
+    
+    // Always get fresh token from localStorage on each request
+    const token = typeof window !== 'undefined' 
+      ? localStorage.getItem('auth_token') 
+      : this.token;
+    
+    const headers: Record<string, string> = {
       'Content-Type': 'application/json',
-      ...options.headers,
+      ...(options.headers as Record<string, string> || {}),
     };
 
-    if (this.token) {
-      headers['Authorization'] = `Bearer ${this.token}`;
+    if (token) {
+      headers['Authorization'] = `Bearer ${token}`;
     }
 
     const response = await fetch(url, {
@@ -137,6 +143,11 @@ class ApiClient {
       method: 'POST',
       body: JSON.stringify(data),
     });
+  }
+
+  // Match history
+  async getMatchHistory(limit = 20, offset = 0) {
+    return this.request<{ success: boolean; sessions: any[] }>(`/api/match/history?limit=${limit}&offset=${offset}`);
   }
 }
 

@@ -6,7 +6,7 @@ import { Session } from '../models/Session';
 import { User } from '../models/User';
 import { MatchingService } from '../services/matching';
 import { createError } from '../middleware/errorHandler';
-import { redisClient } from '../config/redis';
+import { redisClient, safeRedisOperation } from '../config/redis';
 
 const router = express.Router();
 
@@ -51,7 +51,11 @@ router.post('/join', authenticate, matchRateLimiter, async (req: AuthRequest, re
     await queue.save();
 
     // Add to Redis queue for fast matching
-    await redisClient.lPush(`queue:${mode}`, queue._id.toString());
+    await safeRedisOperation(
+      () => redisClient.lPush(`queue:${mode}`, queue._id.toString()),
+      0,
+      'lPush queue'
+    );
 
     // Start matching process
     MatchingService.findMatch(queue._id.toString()).catch((error) => {
@@ -82,7 +86,11 @@ router.delete('/leave', authenticate, async (req: AuthRequest, res, next) => {
       await queue.save();
 
       // Remove from Redis queue
-      await redisClient.lRem(`queue:${queue.mode}`, 0, queue._id.toString());
+      await safeRedisOperation(
+        () => redisClient.lRem(`queue:${queue.mode}`, 0, queue._id.toString()),
+        0,
+        'lRem queue'
+      );
     }
 
     res.json({ success: true, message: 'Left queue' });
@@ -109,9 +117,13 @@ router.get('/status', authenticate, async (req: AuthRequest, res, next) => {
     }
 
     // Calculate position
-    const position = await redisClient.lPos(`queue:${queue.mode}`, queue._id.toString(), {
-      RANK: 1,
-    });
+    const position = await safeRedisOperation(
+      () => redisClient.lPos(`queue:${queue.mode}`, queue._id.toString(), {
+        RANK: 1,
+      }),
+      null,
+      'lPos queue'
+    );
 
     // Estimate wait time
     const estimatedWait = MatchingService.estimateWaitTime(queue.mode);

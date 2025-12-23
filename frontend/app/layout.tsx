@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth-context";
+import { SessionProvider } from "@/lib/session-context";
 
 export const metadata: Metadata = {
   title: "FetchFriends.dev - fetch(your next coding companion).then(pairProgram)",
@@ -27,7 +28,9 @@ export default function RootLayout({
         />
       </head>
       <body className="font-ui antialiased">
-      <AuthProvider>{children}</AuthProvider>
+      <AuthProvider>
+        <SessionProvider>{children}</SessionProvider>
+      </AuthProvider>
       </body>
     </html>
   );

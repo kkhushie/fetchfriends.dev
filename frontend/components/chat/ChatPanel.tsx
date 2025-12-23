@@ -1,25 +1,74 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { Send, Paperclip, Link, Save } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useSession } from "@/lib/session-context";
+import { socketClient } from "@/lib/socket/client";
+import { useAuth } from "@/lib/auth-context";
+
+interface Message {
+  id: string | number;
+  sender: string;
+  senderId?: string;
+  text: string;
+  time: string;
+  type?: 'text' | 'code' | 'link' | 'file';
+}
 
 export function ChatPanel() {
-  const [messages, setMessages] = useState([
-    { id: 1, sender: "Nandini", text: "Check line 45", time: "14:32" },
-    { id: 2, sender: "You", text: "Fixed the useEffect", time: "14:33" },
-    { id: 3, sender: "Ayaansh", text: "Want to refactor?", time: "14:33" },
+  const { currentSession, isInSession } = useSession();
+  const { user } = useAuth();
+  const [messages, setMessages] = useState<Message[]>([
+    { id: 1, sender: "System", text: "Chat connected. Start typing to collaborate!", time: new Date().toLocaleTimeString("en-US", { hour: "2-digit", minute: "2-digit" }) },
   ]);
   const [input, setInput] = useState("");
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!isInSession || !currentSession) return;
+
+    // Join session room for chat
+    socketClient.joinSession(currentSession._id || currentSession.roomId);
+
+    // Listen for incoming messages
+    const handleMessage = (data: any) => {
+      const newMessage: Message = {
+        id: Date.now(),
+        sender: data.userId === user?._id ? "You" : data.userName || "Partner",
+        senderId: data.userId,
+        text: data.message,
+        time: new Date().toLocaleTimeString("en-US", {
+          hour: "2-digit",
+          minute: "2-digit",
+        }),
+        type: data.type || 'text',
+      };
+      setMessages((prev) => [...prev, newMessage]);
+    };
+
+    socketClient.onChatMessage(handleMessage);
+
+    return () => {
+      socketClient.off('chat:message', handleMessage);
+    };
+  }, [isInSession, currentSession, user]);
+
+  useEffect(() => {
+    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+  }, [messages]);
 
   const handleSend = () => {
-    if (input.trim()) {
-      setMessages([
-        ...messages,
+    if (input.trim() && currentSession) {
+      const sessionId = currentSession._id || currentSession.roomId;
+      socketClient.emitChatMessage(sessionId, input.trim(), 'text');
+      
+      setMessages((prev) => [
+        ...prev,
         {
-          id: messages.length + 1,
+          id: Date.now(),
           sender: "You",
-          text: input,
+          text: input.trim(),
           time: new Date().toLocaleTimeString("en-US", {
             hour: "2-digit",
             minute: "2-digit",
@@ -56,6 +105,7 @@ export function ChatPanel() {
             </div>
           </div>
         ))}
+        <div ref={messagesEndRef} />
       </div>
       <div className="p-4 border-t border-[#3c3c3c] bg-[#2d2d30]">
         <div className="flex gap-2 mb-2">

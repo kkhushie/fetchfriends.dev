@@ -135,8 +135,17 @@ class SocketClient {
     this.socket?.emit('queue:subscribe', queueId);
   }
 
-  unsubscribeFromQueue(queueId: string) {
-    this.socket?.emit('queue:unsubscribe', queueId);
+  unsubscribeFromQueue(queueId?: string) {
+    if (queueId) {
+      this.socket?.emit('queue:unsubscribe', queueId);
+    } else {
+      this.socket?.emit('queue:unsubscribe');
+    }
+  }
+
+  // Match events
+  onMatchFound(handler: (data: any) => void) {
+    this.socket?.on('match:found', handler);
   }
 
   // User status

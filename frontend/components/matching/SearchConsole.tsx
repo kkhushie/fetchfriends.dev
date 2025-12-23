@@ -3,91 +3,34 @@
 import { useState, useEffect } from "react";
 import { Square, Settings } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { apiClient } from "@/lib/api/client";
-import { socketClient } from "@/lib/socket/client";
+import { useSession } from "@/lib/session-context";
 
 export function SearchConsole() {
+  const { isSearching, queueStatus, startSearch, stopSearch } = useSession();
   const [progress, setProgress] = useState(65);
-  const [queuePosition, setQueuePosition] = useState(3);
-  const [isSearching, setIsSearching] = useState(false);
-  const [queueId, setQueueId] = useState<string | null>(null);
+  const [queuePosition, setQueuePosition] = useState(0);
 
   useEffect(() => {
-    // Check if already in queue
-    checkQueueStatus();
-
-    // Set up socket listeners for queue updates
-    const token = localStorage.getItem('auth_token');
-    if (token) {
-      socketClient.connect(token);
+    if (queueStatus) {
+      setQueuePosition(queueStatus.position || 0);
+      const estimatedWait = queueStatus.estimatedWait || 0;
+      setProgress(Math.min(100, (estimatedWait / 180) * 100));
+    } else {
+      setProgress(0);
+      setQueuePosition(0);
     }
+  }, [queueStatus]);
 
-    return () => {
-      socketClient.disconnect();
-    };
-  }, []);
-
-  const checkQueueStatus = async () => {
+  const handleStartSearch = async () => {
     try {
-      const response = await apiClient.getQueueStatus();
-      if (response.inQueue && response.queue) {
-        setIsSearching(true);
-        setQueueId(response.queue._id);
-        setQueuePosition(response.queue.position || 0);
-        setProgress(response.queue.estimatedWait ? Math.min(100, (response.queue.estimatedWait / 180) * 100) : 65);
-      }
-    } catch (error) {
-      console.error('Error checking queue status:', error);
-    }
-  };
-
-  const startSearch = async () => {
-    try {
-      const response = await apiClient.joinQueue('random', {
+      await startSearch('random', {
         languages: ['JavaScript', 'Python'],
         experience: 'intermediate',
         goals: ['pair-programming'],
         maxWaitTime: 180,
       });
-      
-      setIsSearching(true);
-      setQueueId(response.queue._id);
-      
-      // Subscribe to queue updates
-      if (response.queue._id) {
-        socketClient.subscribeToQueue(response.queue._id);
-      }
-
-      // Poll for status updates
-      const interval = setInterval(async () => {
-        try {
-          const status = await apiClient.getQueueStatus();
-          if (status.inQueue && status.queue) {
-            setQueuePosition(status.queue.position || 0);
-            setProgress(status.queue.estimatedWait ? Math.min(100, (status.queue.estimatedWait / 180) * 100) : 65);
-          } else {
-            clearInterval(interval);
-            setIsSearching(false);
-          }
-        } catch (error) {
-          console.error('Error polling queue status:', error);
-        }
-      }, 2000);
-
-      return () => clearInterval(interval);
     } catch (error) {
       console.error('Error starting search:', error);
-    }
-  };
-
-  const stopSearch = async () => {
-    try {
-      await apiClient.leaveQueue();
-      setIsSearching(false);
-      setQueueId(null);
-      setProgress(0);
-    } catch (error) {
-      console.error('Error stopping search:', error);
     }
   };
 
@@ -185,7 +128,7 @@ export function SearchConsole() {
 
         <div className="flex gap-3">
           <button
-            onClick={isSearching ? stopSearch : startSearch}
+            onClick={isSearching ? stopSearch : handleStartSearch}
             className={cn(
               "px-4 py-2 rounded font-mono text-sm flex items-center gap-2",
               isSearching

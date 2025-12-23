@@ -51,7 +51,7 @@ export function WelcomeScreen() {
           <div className="space-y-2">
             <div className="flex items-center justify-between px-3 py-2 bg-[#2d2d30] rounded hover:bg-[#3c3c3c] cursor-pointer">
               <span className="text-vscode-text font-mono text-sm">
-                SarahChen.js
+                Ajinkya.js
               </span>
               <span className="text-vscode-text-secondary text-xs">
                 last: 2 hours ago
@@ -59,7 +59,7 @@ export function WelcomeScreen() {
             </div>
             <div className="flex items-center justify-between px-3 py-2 bg-[#2d2d30] rounded hover:bg-[#3c3c3c] cursor-pointer">
               <span className="text-vscode-text font-mono text-sm">
-                AlexSmith.ts
+                KhushiePal.ts
               </span>
               <span className="text-vscode-text-secondary text-xs">
                 last: 1 day ago

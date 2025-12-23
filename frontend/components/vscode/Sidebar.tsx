@@ -11,7 +11,7 @@ interface SidebarProps {
 
 export function Sidebar({ activePanel, onClose }: SidebarProps) {
 
-  const { isAuthenticated, logout } = useAuth(); // Get auth state
+  const { isAuthenticated, user, logout } = useAuth(); // Get auth state
 
   const renderPanel = () => {
     switch (activePanel) {
@@ -56,11 +56,20 @@ export function Sidebar({ activePanel, onClose }: SidebarProps) {
 }
 
 function ProfileExplorer() {
+  const { user } = useAuth();
+  const displayName =
+    user?.profile?.name ||
+    user?.profile?.github?.username ||
+    user?.profile?.linkedin?.profileUrl ||
+    "YourName.js";
+
   return (
     <div className="p-2 font-mono text-xs">
       <div className="flex items-center gap-2 px-2 py-1 hover:bg-[#2a2d2e] rounded cursor-pointer">
         <User className="w-4 h-4 text-vscode-blue" />
-        <span className="text-vscode-text">YourName.js</span>
+        <span className="text-vscode-text truncate max-w-[150px]" title={displayName}>
+          {displayName}
+        </span>
       </div>
       <div className="ml-4 mt-1">
         <div className="flex items-center gap-2 px-2 py-1 hover:bg-[#2a2d2e] rounded cursor-pointer">
@@ -177,6 +186,8 @@ interface AccountPanelProps {
 }
 
 function AccountPanel({ onSignOut, isAuthenticated }: AccountPanelProps) {
+  const { user } = useAuth();
+
   const handleSignOut = () => {
     if (window.confirm("Are you sure you want to sign out?")) {
       onSignOut();
@@ -191,6 +202,31 @@ function AccountPanel({ onSignOut, isAuthenticated }: AccountPanelProps) {
         <div className="mt-4 space-y-2">
           {isAuthenticated ? (
             <>
+              <div className="flex items-center gap-3 mb-2">
+                {user?.profile?.avatar && (
+                  <img
+                    src={user.profile.avatar}
+                    alt={user.profile.name || "Profile avatar"}
+                    className="w-10 h-10 rounded-full border border-[#3c3c3c] object-cover"
+                  />
+                )}
+                <div className="flex flex-col">
+                  <span className="text-vscode-text font-mono text-sm">
+                    {user?.profile?.name || "Anonymous Dev"}
+                  </span>
+                  {user?.profile?.github?.username && (
+                    <span className="text-vscode-text-secondary text-xs font-mono">
+                      @{user.profile.github.username}
+                    </span>
+                  )}
+                  {!user?.profile?.github?.username &&
+                    user?.profile?.linkedin?.profileUrl && (
+                      <span className="text-vscode-text-secondary text-xs font-mono">
+                        LinkedIn user
+                      </span>
+                    )}
+                </div>
+              </div>
               <button className="w-full px-3 py-2 bg-[#2a2d2e] hover:bg-[#3c3c3c] rounded text-sm text-vscode-text text-left">
                 Edit Profile
               </button>

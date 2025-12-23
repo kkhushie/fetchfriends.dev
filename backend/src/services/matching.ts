@@ -1,7 +1,7 @@
 import { Queue } from '../models/Queue';
 import { Session } from '../models/Session';
 import { User } from '../models/User';
-import { redisClient } from '../config/redis';
+import { redisClient, safeRedisOperation } from '../config/redis';
 import { randomBytes } from 'crypto';
 
 export class MatchingService {
@@ -273,15 +273,27 @@ export class MatchingService {
     await queue2.save();
 
     // Remove from Redis queues
-    await redisClient.lRem(`queue:${queue1.mode}`, 0, queue1._id.toString());
-    await redisClient.lRem(`queue:${queue2.mode}`, 0, queue2._id.toString());
+    await safeRedisOperation(
+      () => redisClient.lRem(`queue:${queue1.mode}`, 0, queue1._id.toString()),
+      0,
+      'lRem queue1'
+    );
+    await safeRedisOperation(
+      () => redisClient.lRem(`queue:${queue2.mode}`, 0, queue2._id.toString()),
+      0,
+      'lRem queue2'
+    );
   }
 
   /**
    * Estimate wait time for a queue mode
    */
   static async estimateWaitTime(mode: string): Promise<number> {
-    const queueLength = await redisClient.lLen(`queue:${mode}`);
+    const queueLength = await safeRedisOperation(
+      () => redisClient.lLen(`queue:${mode}`),
+      0,
+      'lLen queue'
+    );
     // Rough estimate: 30 seconds per person in queue
     return queueLength * 30;
   }

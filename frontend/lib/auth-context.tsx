@@ -44,6 +44,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setToken(newToken);
     setIsAuthenticated(true);
     
+    // Update API client token
+    if (typeof window !== 'undefined') {
+      const { apiClient } = require('@/lib/api/client');
+      apiClient.setToken(newToken);
+    }
+    
     if (userData) {
       localStorage.setItem("auth_user", JSON.stringify(userData));
       setUser(userData);
@@ -69,11 +75,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           Authorization: `Bearer ${authToken}`,
         },
       });
-      
+
       if (response.ok) {
-        const userData = await response.json();
-        setUser(userData);
-        localStorage.setItem("auth_user", JSON.stringify(userData));
+        const data = await response.json();
+        const currentUser = data.user ?? data;
+
+        setUser(currentUser);
+        localStorage.setItem("auth_user", JSON.stringify(currentUser));
       }
     } catch (error) {
       console.error("Failed to fetch user data", error);
